@@ -617,6 +617,8 @@ GameObject:
   - component: {fileID: 1375737370}
   - component: {fileID: 1375737369}
   - component: {fileID: 1375737371}
+  - component: {fileID: 1375737372}
+  - component: {fileID: 1375737373}
   m_Layer: 0
   m_Name: XR Origin
   m_TagString: Untagged
@@ -674,6 +676,35 @@ MonoBehaviour:
       m_Calls: []
   m_PlanePrefab: {fileID: 3398755879777373808, guid: 6c8c17170bccba04189bf1dea49462bd, type: 3}
   m_DetectionMode: -1
+--- !u!114 &1375737372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa17d122634046b4a8e23048891fafc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  <trackablesChanged>k__BackingField:
+    m_PersistentCalls:
+      m_Calls: []
+  m_RaycastPrefab: {fileID: 1998279406606865721, guid: 114cf206ddc10174a833e59366540ef8, type: 3}
+--- !u!114 &1375737373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fadf3e2a17880b54aa6f394f241ab531, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  raycastManager: {fileID: 1375737372}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
