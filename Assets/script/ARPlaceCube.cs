@@ -5,68 +5,137 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+using UnityEngine.EventSystems;
 
-public class ARPlaceCube : MonoBehaviour
+public class ARPlaceAndDragCube : MonoBehaviour
 {
     [SerializeField] private ARRaycastManager raycastManager;
-    bool isPlacing = false;
+
+    [Header("UI Elements")]
+    [Tooltip("Drag the Confirm button from your Model Selection Panel here.")]
+    public GameObject confirmButton; // 1. ADDED: Reference to the confirm button
+
+    [Header("Model Placement")]
+    [Tooltip("The model prefab you currently want to place.")]
+    [SerializeField] private GameObject selectedPrefab;
+
+    private GameObject spawnedObject;
+    private bool isDragging = false;
+
+    private static List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
+
     private void OnEnable()
     {
         EnhancedTouchSupport.Enable();
     }
+
     private void OnDisable()
     {
         EnhancedTouchSupport.Disable();
     }
 
-    // Update is called once per frame
+    // 2. ADDED: Hide the confirm button right when the app opens
+    private void Start()
+    {
+        if (confirmButton != null)
+        {
+            confirmButton.SetActive(false);
+        }
+    }
+
     void Update()
     {
         if (!raycastManager) return;
-        if (isPlacing) return;
 
-        bool pressed = false;
+        bool isPressed = false;
+        bool wasPressedThisFrame = false;
         Vector2 screenPosition = default;
 
         if (Touchscreen.current != null)
         {
-            var primary= Touchscreen.current;
-            if (primary.press.wasPressedThisFrame)
+            var touch = Touchscreen.current.primaryTouch;
+            isPressed = touch.press.isPressed;
+            wasPressedThisFrame = touch.press.wasPressedThisFrame;
+            screenPosition = touch.position.ReadValue();
+        }
+        else if (Mouse.current != null)
+        {
+            isPressed = Mouse.current.leftButton.isPressed;
+            wasPressedThisFrame = Mouse.current.leftButton.wasPressedThisFrame;
+            screenPosition = Mouse.current.position.ReadValue();
+        }
+
+        if (wasPressedThisFrame)
+        {
+            if (IsPointerOverUI(screenPosition))
             {
-                pressed = true;
-                screenPosition = primary.position.ReadValue();
+                isDragging = false;
+                return;
             }
+
+            isDragging = true;
         }
-        else if(Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) 
+
+        if (isPressed && isDragging && spawnedObject != null)
         {
-            pressed= true;
-                screenPosition = Mouse.current.position.ReadValue();
+            DragObject(screenPosition);
         }
-        if (pressed)
+
+        if (!isPressed)
         {
-            isPlacing = true;
-            PlaceObject(screenPosition);
+            isDragging = false;
         }
     }
 
-    void PlaceObject(Vector2 touchPosition)
+    private void DragObject(Vector2 touchPosition)
     {
-        var rayHits = new List<ARRaycastHit>();
-        raycastManager.Raycast(touchPosition, rayHits, TrackableType.AllTypes);
+        raycastManager.Raycast(touchPosition, s_Hits, TrackableType.PlaneWithinPolygon);
 
-        if (rayHits.Count > 0)
+        if (s_Hits.Count > 0)
         {
-            Vector3 hitPosePosition = rayHits[0].pose.position;
-            Quaternion hitPoseRotation = rayHits[0].pose.rotation;
-            Instantiate(raycastManager.raycastPrefab, hitPosePosition, hitPoseRotation);
+            spawnedObject.transform.position = s_Hits[0].pose.position;
+            spawnedObject.transform.rotation = s_Hits[0].pose.rotation;
         }
-
-        StartCoroutine(SetIsPlacingToFalseWithDelay());
     }
 
-    IEnumerator SetIsPlacingToFalseWithDelay()
+    public void SpawnModelFromButton(GameObject newPrefab)
     {
-        yield return new WaitForSeconds(0.25f);
-        isPlacing = false;
+        selectedPrefab = newPrefab;
+
+        if (spawnedObject != null)
+        {
+            Destroy(spawnedObject);
+        }
+
+        Vector2 centerScreen = new Vector2(Screen.width / 2f, Screen.height / 2f);
+        raycastManager.Raycast(centerScreen, s_Hits, TrackableType.PlaneWithinPolygon);
+
+        if (s_Hits.Count > 0)
+        {
+            spawnedObject = Instantiate(selectedPrefab, s_Hits[0].pose.position, s_Hits[0].pose.rotation);
+        }
+        else
+        {
+            Transform camTransform = Camera.main.transform;
+            Vector3 spawnPos = camTransform.position + camTransform.forward * 1.0f;
+            spawnPos.y -= 0.25f;
+            spawnedObject = Instantiate(selectedPrefab, spawnPos, Quaternion.identity);
+        }
+
+        // 3. ADDED: Now that the model is actually spawned, show the confirm button!
+        if (confirmButton != null)
+        {
+            confirmButton.SetActive(true);
+        }
+    }
+
+    private bool IsPointerOverUI(Vector2 screenPosition)
+    {
+        PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
+        eventDataCurrentPosition.position = screenPosition;
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventDataCurrentPosition, results);
+
+        return results.Count > 0;
     }
 }
