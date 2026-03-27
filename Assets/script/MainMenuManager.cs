@@ -13,8 +13,12 @@ public class MainMenuManager : MonoBehaviour
     [Tooltip("Type the exact name of your Profile scene here")]
     [SerializeField] private string _profileSceneName = "Profile";
 
-    [Tooltip("Type the exact name of your Login scene here")]
-    [SerializeField] private string _loginSceneName = "Login";
+    // --- NEW ADDITIONS FOR CHATBOT AND MEDITATION ---
+    [Tooltip("Type the exact name of your Chatbot scene here")]
+    [SerializeField] private string _chatbotSceneName = "Chatbot";
+
+    [Tooltip("Type the exact name of your AR Meditation scene here")]
+    [SerializeField] private string _meditationSceneName = "planedetection";
 
     private void Start()
     {
@@ -42,5 +46,15 @@ public class MainMenuManager : MonoBehaviour
         SceneManager.LoadScene(_profileSceneName);
     }
 
-   
+    // Hook this up to your "Chatbot" button!
+    public void GoToChatbot()
+    {
+        SceneManager.LoadScene(_chatbotSceneName);
+    }
+
+    // Hook this up to your "Meditation" button!
+    public void GoToMeditation()
+    {
+        SceneManager.LoadScene(_meditationSceneName);
+    }
 }

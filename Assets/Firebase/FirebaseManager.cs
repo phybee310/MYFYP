@@ -168,9 +168,15 @@ public class FirebaseManager : MonoBehaviour
             {
                 AuthError.EmailAlreadyInUse => "Email is already registered.",
                 AuthError.InvalidEmail => "Invalid Email Format.",
-                AuthError.WrongPassword => "Incorrect Password.",
-                AuthError.UserNotFound => "Account does not exist.",
                 AuthError.WeakPassword => "Password must be at least 6 characters.",
+
+                // NEW: Catches the modern security-protected error for both wrong password and bad email
+                AuthError.InvalidCredential => "Account not found or incorrect password. Please try again or register a new account.",
+
+                // Kept as fallbacks just in case you disable Email Enumeration Protection in the console
+                AuthError.WrongPassword => "Incorrect Password.",
+                AuthError.UserNotFound => "Account does not exist. Please register a new account.",
+
                 _ => "Authentication failed. Please try again."
             };
 

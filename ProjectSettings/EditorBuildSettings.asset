@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/Scenes/mainpage.unity
     guid: f25d80086d5255749b816ed8438c6934
   - enabled: 1
+    path: Assets/Scenes/Chatbot.unity
+    guid: 47b7de48147658f4cac49118749e5e0b
+  - enabled: 1
     path: Assets/Scenes/planedetection.unity
     guid: 90bbcfcfc9761064c9f120088b961411
   - enabled: 1
