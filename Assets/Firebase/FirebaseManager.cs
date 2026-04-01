@@ -158,7 +158,8 @@ public class FirebaseManager : MonoBehaviour
 
     private void HandleAuthException(Exception ex)
     {
-        Debug.LogException(ex);
+        // Change LogException to LogWarning so it doesn't look like a crash in the editor
+        Debug.LogWarning($"Auth Error Caught: {ex.GetBaseException().Message}");
 
         if (ex.GetBaseException() is FirebaseException firebaseEx)
         {
@@ -170,21 +171,31 @@ public class FirebaseManager : MonoBehaviour
                 AuthError.InvalidEmail => "Invalid Email Format.",
                 AuthError.WeakPassword => "Password must be at least 6 characters.",
 
-                // NEW: Catches the modern security-protected error for both wrong password and bad email
-                AuthError.InvalidCredential => "Account not found or incorrect password. Please try again or register a new account.",
+                // Normal security error
+                AuthError.InvalidCredential => "Account not found or incorrect password.",
 
-                // Kept as fallbacks just in case you disable Email Enumeration Protection in the console
+                // Legacy fallbacks
                 AuthError.WrongPassword => "Incorrect Password.",
-                AuthError.UserNotFound => "Account does not exist. Please register a new account.",
+                AuthError.UserNotFound => "Account does not exist.",
+
+                // NEW: Catches generic failures that the SDK doesn't know how to parse
+                AuthError.Failure => "Account not found or incorrect password.",
 
                 _ => "Authentication failed. Please try again."
             };
+
+            // NEW: The Ultimate Safety Net. 
+            // If the SDK throws the literal "internal error" text because of Email Enumeration Protection, force the correct message.
+            if (firebaseEx.Message.ToLower().Contains("internal error"))
+            {
+                errorMessage = "Account not found or incorrect password.";
+            }
 
             SetWarningMessage(errorMessage);
         }
         else
         {
-            SetWarningMessage("An unexpected error occurred.");
+            SetWarningMessage("An unexpected error occurred. Please try again.");
         }
     }
 }
