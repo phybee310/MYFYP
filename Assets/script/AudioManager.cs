@@ -4,15 +4,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
-using Firebase.Auth;        // Added for Cloud Save
-using Firebase.Database;    // Added for Cloud Save
-using Firebase.Extensions;  // Added for Cloud Save
+using Firebase.Auth;
+using Firebase.Database;
+using Firebase.Extensions;
 
 public class AudioManager : MonoBehaviour
 {
     [Header("Scene Navigation")]
     [SerializeField] private string _mainMenuSceneName = "mainpage";
-
     [Header("UI Panels")]
     public GameObject modelSelectionPanel;
     public GameObject bgmSelectionPanel;
@@ -20,9 +19,9 @@ public class AudioManager : MonoBehaviour
     public GameObject pausePanel;
 
     [Header("UI Buttons")]
-    public GameObject startButton;
+    public GameObject startButton; // Note: We will bypass this and use the AR Confirm button instead
     public GameObject confirmBgmButton;
-    public GameObject confirmTimeButton;  
+    public GameObject confirmTimeButton;
 
     [Header("Timer UI")]
     public GameObject timerContainer;
@@ -41,14 +40,16 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
-        modelSelectionPanel.SetActive(true);
+        // 1. CHANGED: Start with Time Panel ON, everything else OFF
+        timeSelectionPanel.SetActive(true);
         bgmSelectionPanel.SetActive(false);
-        timeSelectionPanel.SetActive(false);
+        modelSelectionPanel.SetActive(false);
+
         pausePanel.SetActive(false);
         timerContainer.SetActive(false);
         startButton.SetActive(false);
         confirmBgmButton.SetActive(false);
-        confirmTimeButton.SetActive(false); 
+        confirmTimeButton.SetActive(false);
     }
 
     private void Update()
@@ -80,13 +81,24 @@ public class AudioManager : MonoBehaviour
         timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
-    // --- STEP 1: OPEN BGM ---
-    public void OpenBGMSelectionPanel()
+    // --- STEP 1: TIME SELECTION ---
+    public void SelectTimeDuration(int minutes)
     {
-        modelSelectionPanel.SetActive(false);
+        bgmAudioSource.Stop();
+        targetMeditationSeconds = minutes * 60f;
+        confirmTimeButton.SetActive(true);
+    }
+
+    public void ConfirmTimeSelection()
+    {
+        timeSelectionPanel.SetActive(false);
+        confirmTimeButton.SetActive(false);
+
+        // 2. CHANGED: Move to BGM Panel next
         bgmSelectionPanel.SetActive(true);
     }
 
+    // --- STEP 2: BGM SELECTION ---
     public void PreviewTrack(int trackIndex)
     {
         if (trackIndex >= 0 && trackIndex < availableBGMs.Length)
@@ -97,45 +109,29 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // --- STEP 2: OPEN TIME SELECTION ---
     public void ConfirmBgmSelection()
     {
         bgmAudioSource.Stop();
         bgmSelectionPanel.SetActive(false);
         confirmBgmButton.SetActive(false);
 
-        timeSelectionPanel.SetActive(true);
+        // 3. CHANGED: Move to Model Panel last
+        modelSelectionPanel.SetActive(true);
     }
 
-    // --- STEP 3: SET DURATION ---
-    public void SelectTimeDuration(int minutes)
-    {
-        // THE BUG FIX: Force silence!
-        bgmAudioSource.Stop();
-
-        targetMeditationSeconds = minutes * 60f;
-        confirmTimeButton.SetActive(true);
-    }
-
-    // --- STEP 4: CONFIRM DURATION ---
-    public void ConfirmTimeSelection()
-    {
-        timeSelectionPanel.SetActive(false);
-        confirmTimeButton.SetActive(false);
-        startButton.SetActive(true);
-    }
-
-    // --- STEP 5: START MEDITATION ---
+    // --- STEP 3: START MEDITATION (Triggered after placing the AR model) ---
     public void StartExperience()
     {
+        // 4. CHANGED: Hide the model selection panel and unused start button
+        modelSelectionPanel.SetActive(false);
         startButton.SetActive(false);
-        timerContainer.SetActive(true);
 
+        timerContainer.SetActive(true);
         bgmAudioSource.Play();
 
         isMeditating = true;
         isPaused = false;
-        
+
         currentMeditationSeconds = 0f;
         if (progressBar != null) progressBar.fillAmount = 0f;
         UpdateTimerText();
@@ -177,8 +173,8 @@ public class AudioManager : MonoBehaviour
     private void SaveDataToCloud(float newSessionSeconds)
     {
         FirebaseUser user = FirebaseAuth.DefaultInstance.CurrentUser;
-        
-        if (user == null) 
+
+        if (user == null)
         {
             SceneManager.LoadScene(_mainMenuSceneName);
             return;
@@ -198,7 +194,7 @@ public class AudioManager : MonoBehaviour
                 {
                     existingTime = float.Parse(task.Result.Child("TotalMeditationTime").Value.ToString());
                 }
-                
+
                 if (task.Result.HasChild("TotalMeditationSessions"))
                 {
                     existingSessions = int.Parse(task.Result.Child("TotalMeditationSessions").Value.ToString());
@@ -209,7 +205,7 @@ public class AudioManager : MonoBehaviour
 
                 dbRef.Child("users").Child(userId).Child("TotalMeditationTime").SetValueAsync(updatedTime);
                 dbRef.Child("users").Child(userId).Child("TotalMeditationSessions").SetValueAsync(updatedSessions);
-                
+
                 Debug.Log($"Cloud Save Successful! Lifetime Time: {updatedTime}, Lifetime Sessions: {updatedSessions}");
             }
             else
