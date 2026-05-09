@@ -60,40 +60,58 @@ public class ARPlaceAndDragCube : MonoBehaviour
 
         if (isWaitingForSurface)
         {
-            Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            bool hitFound = false;
+            ARRaycastHit bestHit = default;
+            float closestDistance = float.MaxValue;
 
-            if (raycastManager.Raycast(screenCenter, s_Hits, TrackableType.PlaneWithinPolygon))
+            Vector2[] samplePoints = new Vector2[]
             {
-                ARPlane plane = planeManager.GetPlane(s_Hits[0].trackableId);
+                new Vector2(Screen.width * 0.5f, Screen.height * 0.5f),
+                new Vector2(Screen.width * 0.3f, Screen.height * 0.5f),
+                new Vector2(Screen.width * 0.7f, Screen.height * 0.5f),
+                new Vector2(Screen.width * 0.5f, Screen.height * 0.3f),
+                new Vector2(Screen.width * 0.5f, Screen.height * 0.7f)
+            };
 
-                if (plane != null && plane.alignment == PlaneAlignment.HorizontalUp)
+            foreach (var point in samplePoints)
+            {
+                if (raycastManager.Raycast(point, s_Hits, TrackableType.PlaneWithinPolygon | TrackableType.FeaturePoint))
                 {
-                    stableHitCount++;
-
-                    if (stableHitCount >= requiredStableFrames)
+                    for (int i = 0; i < s_Hits.Count; i++)
                     {
-                        isWaitingForSurface = false;
-                        stableHitCount = 0;
-
-                        if (scanningPromptPanel != null) scanningPromptPanel.SetActive(false);
-
-                        spawnedObject = Instantiate(selectedPrefab, s_Hits[0].pose.position, s_Hits[0].pose.rotation);
-                        RotateToFaceCamera();
-
-                        isPreviewing = true;
-                        isDragging = false;
-
-                        if (confirmButton != null) confirmButton.SetActive(true);
+                        if (s_Hits[i].distance < closestDistance)
+                        {
+                            closestDistance = s_Hits[i].distance;
+                            bestHit = s_Hits[i];
+                            hitFound = true;
+                        }
                     }
                 }
-                else
+            }
+
+            if (hitFound)
+            {
+                stableHitCount++;
+
+                if (stableHitCount >= requiredStableFrames)
                 {
-                    stableHitCount = Mathf.Max(0, stableHitCount - 1);
+                    isWaitingForSurface = false;
+                    stableHitCount = 0;
+
+                    if (scanningPromptPanel != null) scanningPromptPanel.SetActive(false);
+
+                    spawnedObject = Instantiate(selectedPrefab, bestHit.pose.position, bestHit.pose.rotation);
+                    RotateToFaceCamera();
+
+                    isPreviewing = true;
+                    isDragging = false;
+
+                    if (confirmButton != null) confirmButton.SetActive(true);
                 }
             }
             else
             {
-                stableHitCount = Mathf.Max(0, stableHitCount - 1);
+                stableHitCount = 0;
             }
 
             return;
@@ -172,7 +190,6 @@ public class ARPlaceAndDragCube : MonoBehaviour
                 {
                     catScript.NormalTap();
                 }
-                // --- NEW: Check if the user tapped a Flower ---
                 else if (hit.transform.TryGetComponent<FlowerInteraction>(out FlowerInteraction flowerScript))
                 {
                     flowerScript.TapFlower();

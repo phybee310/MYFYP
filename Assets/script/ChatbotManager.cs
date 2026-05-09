@@ -374,17 +374,19 @@ public class ChatbotManager : MonoBehaviour
                 "   - 50 and above: calm, respectful, experience-aware.\n\n" +
 
                 "2. Contextual Advice: When providing specific suggestions, tailor them to be feasible within their occupation's typical daily routine. \n" +
-                "3. Natural Conversation: Guide the user to talk when they express their concern.Do NOT awkwardly force their age, occupation or their primary goals into every single reply. Use this context to silently shape your advice so it feels highly relevant to them. \n" +
+                "3. Natural Conversation: Guide the user to talk when they express their concern without jump straight to a solution.Do NOT awkwardly force their age, occupation or their primary goals into every single reply. Use this context to silently shape your advice so it feels highly relevant to them. \n" +
                 $"4. Goal-Oriented Support: Use their {goalsForPrompt}to guide your analysis whenever appropriate, connect their current struggles back to these goals to help them achieve specific outcomes. \n" +
                 $"5. Tone requirement: You MUST maintain a {profile.tonePreference} tone at all times. \n" +
-                "6. Silently verify your response before outputting: Ensure your tone naturally aligns with their demographic without sounding forced.\n\n";
+                "6. Silently verify your response before outputting: Ensure your tone naturally aligns with their demographic without sounding forced.\n\n"+
+
+                "SAFETY & FORMATTING RULES: \n" +
+               "1. You must remain conversational, concise, and easy to read on a mobile screen. \n" +
+                "2. Keep all responses under 150 words and use short, digestible sentences. \n" +
+                "3. CRITICAL: You are a supportive AI companion, not a doctor. Never offer medical diagnoses, prescribe treatments, or analyze severe trauma. \n" +
+                "4. If the user expresses thoughts of self-harm or severe crisis, you must gently but immediately encourage them to seek real professional help.";
         }
 
-        systemInstructionText +=
-            "SAFETY & FORMATTING RULES: \n" +
-            "1. You must remain conversational, concise, and easy to read on a mobile screen. Never reply with more than 5 short sentences. \n" +
-            "2. CRITICAL: You are a supportive AI companion, not a doctor. Never offer medical diagnoses, prescribe treatments, or analyze severe trauma. \n" +
-            "3. If the user expresses thoughts of self-harm or severe crisis, you must gently but immediately encourage them to seek real professional help.";
+       
 
         // --- DEBUG LOG: Print the entire system instruction string ---
         Debug.Log($"[Gemini System Prompt Compiled]:\n{systemInstructionText}");

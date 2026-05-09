@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions; // NEW: Required for the Regex validation
+using System.Text.RegularExpressions;
 using UnityEngine;
 using TMPro;
 using Firebase;
@@ -23,6 +23,7 @@ public class FirebaseManager : MonoBehaviour
     [Header("UI Panels")]
     [SerializeField] private GameObject _loginPanel;
     [SerializeField] private GameObject _registerPanel;
+    [SerializeField] private GameObject _resetPasswordPanel; // NEW: Added Reset Password Panel
 
     [Header("Login UI")]
     [SerializeField] private TMP_InputField _loginEmailInput;
@@ -33,6 +34,10 @@ public class FirebaseManager : MonoBehaviour
     [SerializeField] private TMP_InputField _regEmailInput;
     [SerializeField] private TMP_InputField _regPasswordInput;
     [SerializeField] private TMP_InputField _regRetypePasswordInput;
+
+    // NEW: Input field for the reset password email
+    [Header("Reset Password UI")]
+    [SerializeField] private TMP_InputField _resetEmailInput;
 
     [Header("Alerts")]
     [SerializeField] private TMP_Text _warningText;
@@ -69,13 +74,18 @@ public class FirebaseManager : MonoBehaviour
         }
     }
 
-    public void ShowLoginPanel() => TogglePanels(showLogin: true);
-    public void ShowRegisterPanel() => TogglePanels(showLogin: false);
+    public void ShowLoginPanel() => TogglePanels(showLogin: true, showRegister: false, showReset: false);
+    public void ShowRegisterPanel() => TogglePanels(showLogin: false, showRegister: true, showReset: false);
 
-    private void TogglePanels(bool showLogin)
+    // NEW: Method to show the reset password panel
+    public void ShowResetPasswordPanel() => TogglePanels(showLogin: false, showRegister: false, showReset: true);
+
+    // NEW: Updated TogglePanels to handle 3 panels instead of 2
+    private void TogglePanels(bool showLogin, bool showRegister, bool showReset)
     {
-        _loginPanel.SetActive(showLogin);
-        _registerPanel.SetActive(!showLogin);
+        if (_loginPanel != null) _loginPanel.SetActive(showLogin);
+        if (_registerPanel != null) _registerPanel.SetActive(showRegister);
+        if (_resetPasswordPanel != null) _resetPasswordPanel.SetActive(showReset);
         SetWarningMessage(string.Empty);
     }
 
@@ -108,7 +118,6 @@ public class FirebaseManager : MonoBehaviour
 
             _user = task.Result.User;
 
-            // NEW: Make sure we trim accidental spaces before saving the DisplayName!
             string cleanUsername = _regUserIDInput.text.Trim();
             UserProfile profile = new UserProfile { DisplayName = cleanUsername };
 
@@ -146,8 +155,38 @@ public class FirebaseManager : MonoBehaviour
             _user = task.Result.User;
             SetWarningMessage("Login successful! Loading...");
 
-            // Fire the event to tell AuthSceneController to load the Main Menu
             OnLoginSuccess?.Invoke(_user);
+        });
+    }
+
+    // --- NEW: RESET PASSWORD LOGIC ---
+    public void OnResetPasswordButtonClicked()
+    {
+        string email = _resetEmailInput.text.Trim();
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            SetWarningMessage("Please enter your email to reset your password.");
+            return;
+        }
+
+        
+
+        _auth.SendPasswordResetEmailAsync(email).ContinueWithOnMainThread(task =>
+        {
+            if (task.IsCanceled)
+            {
+                SetWarningMessage("Password reset was canceled.");
+                return;
+            }
+            if (task.IsFaulted)
+            {
+                HandleAuthException(task.Exception);
+                return;
+            }
+
+            SetWarningMessage("Password reset email sent, Check your inbox.");
+            _resetEmailInput.text = ""; 
         });
     }
 
@@ -163,7 +202,6 @@ public class FirebaseManager : MonoBehaviour
             return false;
         }
 
-        // NEW: Check for special characters (Must match your ProfileManager rules)
         if (!Regex.IsMatch(username, "^[a-zA-Z0-9_]+$"))
         {
             SetWarningMessage("Your username should contains letters,numbers and underscore only.");
@@ -181,7 +219,6 @@ public class FirebaseManager : MonoBehaviour
 
     private void HandleAuthException(Exception ex)
     {
-        // Change LogException to LogWarning so it doesn't look like a crash in the editor
         Debug.LogWarning($"Auth Error Caught: {ex.GetBaseException().Message}");
 
         if (ex.GetBaseException() is FirebaseException firebaseEx)
@@ -201,8 +238,6 @@ public class FirebaseManager : MonoBehaviour
                 _ => "Authentication failed. Please try again."
             };
 
-            // The Ultimate Safety Net. 
-            // If the SDK throws the literal "internal error" text because of Email Enumeration Protection, force the correct message.
             if (firebaseEx.Message.ToLower().Contains("internal error"))
             {
                 errorMessage = "Account not found or incorrect password.";

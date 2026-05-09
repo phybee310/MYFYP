@@ -7,11 +7,13 @@ using UnityEngine.SceneManagement;
 using Firebase.Auth;
 using Firebase.Database;
 using Firebase.Extensions;
+using UnityEngine.EventSystems; // NEW: Required to detect which button was clicked!
 
 public class AudioManager : MonoBehaviour
 {
     [Header("Scene Navigation")]
     [SerializeField] private string _mainMenuSceneName = "mainpage";
+
     [Header("UI Panels")]
     public GameObject modelSelectionPanel;
     public GameObject bgmSelectionPanel;
@@ -19,9 +21,17 @@ public class AudioManager : MonoBehaviour
     public GameObject pausePanel;
 
     [Header("UI Buttons")]
-    public GameObject startButton; // Note: We will bypass this and use the AR Confirm button instead
+    public GameObject startButton;
     public GameObject confirmBgmButton;
     public GameObject confirmTimeButton;
+
+    // --- NEW: BUTTON VISUAL ARRAYS ---
+    [Header("Button Visuals")]
+    [SerializeField] private Color _defaultButtonColor = Color.white;
+    [SerializeField] private Color _selectedOverlayColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+    public Button[] timeButtons;
+    public Button[] bgmButtons;
+    public Button[] modelButtons;
 
     [Header("Timer UI")]
     public GameObject timerContainer;
@@ -40,7 +50,6 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
-        // 1. CHANGED: Start with Time Panel ON, everything else OFF
         timeSelectionPanel.SetActive(true);
         bgmSelectionPanel.SetActive(false);
         modelSelectionPanel.SetActive(false);
@@ -81,20 +90,43 @@ public class AudioManager : MonoBehaviour
         timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
+    // --- BUTTON VISUAL OVERLAY HELPER ---
+    private void ApplyDarkOverlay(Button[] buttonGroup)
+    {
+        // Find exactly which button was just clicked using Unity's EventSystem
+        if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null) return;
+
+        GameObject clickedButton = EventSystem.current.currentSelectedGameObject;
+
+        foreach (Button btn in buttonGroup)
+        {
+            if (btn != null)
+            {
+                Image btnImage = btn.GetComponent<Image>();
+                if (btnImage != null)
+                {
+                    // If this is the button we clicked, turn it grey. Otherwise, turn it white.
+                    btnImage.color = (btn.gameObject == clickedButton) ? _selectedOverlayColor : _defaultButtonColor;
+                }
+            }
+        }
+    }
+
     // --- STEP 1: TIME SELECTION ---
     public void SelectTimeDuration(int minutes)
     {
         bgmAudioSource.Stop();
         targetMeditationSeconds = minutes * 60f;
         confirmTimeButton.SetActive(true);
+
+        // NEW: Update the visual colors for the Time buttons
+        ApplyDarkOverlay(timeButtons);
     }
 
     public void ConfirmTimeSelection()
     {
         timeSelectionPanel.SetActive(false);
         confirmTimeButton.SetActive(false);
-
-        // 2. CHANGED: Move to BGM Panel next
         bgmSelectionPanel.SetActive(true);
     }
 
@@ -106,6 +138,9 @@ public class AudioManager : MonoBehaviour
             bgmAudioSource.clip = availableBGMs[trackIndex];
             bgmAudioSource.Play();
             confirmBgmButton.SetActive(true);
+
+            // NEW: Update the visual colors for the BGM buttons
+            ApplyDarkOverlay(bgmButtons);
         }
     }
 
@@ -114,15 +149,20 @@ public class AudioManager : MonoBehaviour
         bgmAudioSource.Stop();
         bgmSelectionPanel.SetActive(false);
         confirmBgmButton.SetActive(false);
-
-        // 3. CHANGED: Move to Model Panel last
         modelSelectionPanel.SetActive(true);
     }
 
-    // --- STEP 3: START MEDITATION (Triggered after placing the AR model) ---
+    // --- STEP 3: MODEL SELECTION ---
+
+    // NEW: Call this from your Model selection buttons just to update the grey overlay!
+    public void SelectModelVisual()
+    {
+        ApplyDarkOverlay(modelButtons);
+    }
+
+    // --- START MEDITATION (Triggered after placing the AR model) ---
     public void StartExperience()
     {
-        // 4. CHANGED: Hide the model selection panel and unused start button
         modelSelectionPanel.SetActive(false);
         startButton.SetActive(false);
 
