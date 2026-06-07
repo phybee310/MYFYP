@@ -1,4 +1,5 @@
 using System;
+using System.Collections; // NEW: Required for Coroutines
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -23,7 +24,7 @@ public class FirebaseManager : MonoBehaviour
     [Header("UI Panels")]
     [SerializeField] private GameObject _loginPanel;
     [SerializeField] private GameObject _registerPanel;
-    [SerializeField] private GameObject _resetPasswordPanel; // NEW: Added Reset Password Panel
+    [SerializeField] private GameObject _resetPasswordPanel;
 
     [Header("Login UI")]
     [SerializeField] private TMP_InputField _loginEmailInput;
@@ -35,15 +36,19 @@ public class FirebaseManager : MonoBehaviour
     [SerializeField] private TMP_InputField _regPasswordInput;
     [SerializeField] private TMP_InputField _regRetypePasswordInput;
 
-    // NEW: Input field for the reset password email
     [Header("Reset Password UI")]
     [SerializeField] private TMP_InputField _resetEmailInput;
 
-    [Header("Alerts")]
-    [SerializeField] private TMP_Text _warningText;
+    [Header("Popup Alert UI")]
+    [SerializeField] private GameObject _popupPanel;
+    [SerializeField] private TMP_Text _popupText;
+
+    // NEW: Variable to keep track of the active popup timer
+    private Coroutine _popupCoroutine;
 
     private void Start()
     {
+        if (_popupPanel != null) _popupPanel.SetActive(false);
         InitializeFirebase();
     }
 
@@ -54,7 +59,7 @@ public class FirebaseManager : MonoBehaviour
             if (task.Exception != null)
             {
                 Debug.LogError($"Firebase Initialization Failed: {task.Exception}");
-                SetWarningMessage("Failed to connect to authentication server.");
+                ShowPopupMessage("Failed to connect to authentication server.");
                 return;
             }
 
@@ -76,23 +81,37 @@ public class FirebaseManager : MonoBehaviour
 
     public void ShowLoginPanel() => TogglePanels(showLogin: true, showRegister: false, showReset: false);
     public void ShowRegisterPanel() => TogglePanels(showLogin: false, showRegister: true, showReset: false);
-
-    // NEW: Method to show the reset password panel
     public void ShowResetPasswordPanel() => TogglePanels(showLogin: false, showRegister: false, showReset: true);
 
-    // NEW: Updated TogglePanels to handle 3 panels instead of 2
     private void TogglePanels(bool showLogin, bool showRegister, bool showReset)
     {
         if (_loginPanel != null) _loginPanel.SetActive(showLogin);
         if (_registerPanel != null) _registerPanel.SetActive(showRegister);
         if (_resetPasswordPanel != null) _resetPasswordPanel.SetActive(showReset);
-        SetWarningMessage(string.Empty);
     }
 
-    private void SetWarningMessage(string message)
+    // --- POPUP LOGIC (UPDATED FOR AUTO-HIDE) ---
+
+    private void ShowPopupMessage(string message)
     {
-        if (_warningText != null)
-            _warningText.text = message;
+        if (_popupText != null) _popupText.text = message;
+        if (_popupPanel != null) _popupPanel.SetActive(true);
+
+        // Stop the previous timer if a new message appears quickly
+        if (_popupCoroutine != null)
+        {
+            StopCoroutine(_popupCoroutine);
+        }
+
+        // Start a new 5-second countdown
+        _popupCoroutine = StartCoroutine(HidePopupRoutine(5f));
+    }
+
+    // The coroutine that waits and then hides the panel
+    private IEnumerator HidePopupRoutine(float delaySeconds)
+    {
+        yield return new WaitForSeconds(delaySeconds);
+        if (_popupPanel != null) _popupPanel.SetActive(false);
     }
 
     // --- AUTHENTICATION LOGIC ---
@@ -101,13 +120,13 @@ public class FirebaseManager : MonoBehaviour
     {
         if (!ValidateRegistrationInputs()) return;
 
-        SetWarningMessage("Registering...");
+        ShowPopupMessage("Registering...");
 
         _auth.CreateUserWithEmailAndPasswordAsync(_regEmailInput.text.Trim(), _regPasswordInput.text).ContinueWithOnMainThread(task =>
         {
             if (task.IsCanceled)
             {
-                SetWarningMessage("Registration was canceled.");
+                ShowPopupMessage("Registration was canceled.");
                 return;
             }
             if (task.IsFaulted)
@@ -123,7 +142,7 @@ public class FirebaseManager : MonoBehaviour
 
             _user.UpdateUserProfileAsync(profile).ContinueWithOnMainThread(profileTask =>
             {
-                SetWarningMessage($"Successfully registered as {_user.DisplayName}!");
+                ShowPopupMessage($"Successfully registered as {_user.DisplayName}!");
                 ShowLoginPanel();
             });
         });
@@ -133,17 +152,17 @@ public class FirebaseManager : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(_loginEmailInput.text) || string.IsNullOrWhiteSpace(_loginPasswordInput.text))
         {
-            SetWarningMessage("Please enter email and password.");
+            ShowPopupMessage("Please enter email and password.");
             return;
         }
 
-        SetWarningMessage("Logging in...");
+        ShowPopupMessage("Logging in...");
 
         _auth.SignInWithEmailAndPasswordAsync(_loginEmailInput.text.Trim(), _loginPasswordInput.text).ContinueWithOnMainThread(task =>
         {
             if (task.IsCanceled)
             {
-                SetWarningMessage("Login was canceled.");
+                ShowPopupMessage("Login was canceled.");
                 return;
             }
             if (task.IsFaulted)
@@ -153,40 +172,56 @@ public class FirebaseManager : MonoBehaviour
             }
 
             _user = task.Result.User;
-            SetWarningMessage("Login successful! Loading...");
+            ShowPopupMessage("Login successful! Loading...");
 
             OnLoginSuccess?.Invoke(_user);
         });
     }
 
-    // --- NEW: RESET PASSWORD LOGIC ---
+    // --- RESET PASSWORD LOGIC ---
     public void OnResetPasswordButtonClicked()
     {
         string email = _resetEmailInput.text.Trim();
 
         if (string.IsNullOrWhiteSpace(email))
         {
-            SetWarningMessage("Please enter your email to reset your password.");
+            ShowPopupMessage("Please enter your email to reset your password.");
             return;
         }
 
-        
+        ShowPopupMessage("Checking email...");
 
-        _auth.SendPasswordResetEmailAsync(email).ContinueWithOnMainThread(task =>
+        _auth.FetchProvidersForEmailAsync(email).ContinueWithOnMainThread(fetchTask =>
         {
-            if (task.IsCanceled)
+            if (fetchTask.IsCanceled || fetchTask.IsFaulted)
             {
-                SetWarningMessage("Password reset was canceled.");
-                return;
-            }
-            if (task.IsFaulted)
-            {
-                HandleAuthException(task.Exception);
+                HandleAuthException(fetchTask.Exception);
                 return;
             }
 
-            SetWarningMessage("Password reset email sent, Check your inbox.");
-            _resetEmailInput.text = ""; 
+            var providers = fetchTask.Result;
+            if (providers == null || !providers.GetEnumerator().MoveNext())
+            {
+                ShowPopupMessage("This email is not registered in our system.");
+                return;
+            }
+
+            _auth.SendPasswordResetEmailAsync(email).ContinueWithOnMainThread(resetTask =>
+            {
+                if (resetTask.IsCanceled)
+                {
+                    ShowPopupMessage("Password reset was canceled.");
+                    return;
+                }
+                if (resetTask.IsFaulted)
+                {
+                    HandleAuthException(resetTask.Exception);
+                    return;
+                }
+
+                ShowPopupMessage("Password reset email sent! Please check your inbox or spam email.");
+                _resetEmailInput.text = "";
+            });
         });
     }
 
@@ -198,19 +233,19 @@ public class FirebaseManager : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(_regEmailInput.text))
         {
-            SetWarningMessage("Please fill in all fields.");
+            ShowPopupMessage("Please fill in all fields.");
             return false;
         }
 
         if (!Regex.IsMatch(username, "^[a-zA-Z0-9_]+$"))
         {
-            SetWarningMessage("Your username should contains letters,numbers and underscore only.");
+            ShowPopupMessage("Your username should contain letters, numbers, and underscores only.");
             return false;
         }
 
         if (_regPasswordInput.text != _regRetypePasswordInput.text)
         {
-            SetWarningMessage("Passwords do not match.");
+            ShowPopupMessage("Passwords do not match.");
             return false;
         }
 
@@ -243,11 +278,11 @@ public class FirebaseManager : MonoBehaviour
                 errorMessage = "Account not found or incorrect password.";
             }
 
-            SetWarningMessage(errorMessage);
+            ShowPopupMessage(errorMessage);
         }
         else
         {
-            SetWarningMessage("An unexpected error occurred. Please try again.");
+            ShowPopupMessage("An unexpected error occurred. Please try again.");
         }
     }
 }

@@ -134,7 +134,7 @@ public class ChatbotManager : MonoBehaviour
 
     private void Update()
     {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID
         UpdateKeyboardState();
         UpdatePanelPosition();
 #endif
@@ -206,7 +206,6 @@ public class ChatbotManager : MonoBehaviour
                 string profileJson = profileSnapshot.GetRawJsonValue();
                 userProfile = JsonUtility.FromJson<UserProfileData>(profileJson);
 
-                // --- DEBUG LOG: Verify successful fetch ---
                 Debug.Log($"[Firebase] Profile data found and loaded for user: {userName}");
             }
             else
@@ -238,7 +237,7 @@ public class ChatbotManager : MonoBehaviour
 
     private void StartNewConversation()
     {
-        string welcomeText = $"Hello {userName}! I am your AI mental health assistant. How are you feeling today?";
+        string welcomeText = $"Hello {userName}! I am your AI mental health assistant. How are you feeling today?<sprite name=\"smile\">";
         SpawnBubble(welcomeText, true, chatContentContainer);
     }
 
@@ -344,7 +343,9 @@ public class ChatbotManager : MonoBehaviour
     {
         var ai = FirebaseAI.GetInstance(FirebaseAI.Backend.GoogleAI());
 
-        string systemInstructionText = "You are a calming, empathetic, and supportive mental health assistant. ";
+        string systemInstructionText = "Role: Empathetic mental health assistant.\n" +
+                                        "CRITICAL STYLE RULE: Conversational,point form, Mobile-friendly.\n" +
+                                        "Safety: You are NOT a doctor. No diagnoses or prescriptions. If crisis/self-harm, gently urge professional help,provide MALAYSIA emergency hotlines.\n";
 
         if (profile != null)
         {
@@ -361,40 +362,64 @@ public class ChatbotManager : MonoBehaviour
             Debug.Log("===============================================");
 
             systemInstructionText +=
-                $"\n\nYou are speaking to a user with the following profile context:\n" +
-                $"- Age Range: {profile.ageRange}\n" +
-                $"- Occupation: {profile.occupation}\n" +
-                $"- Their primary goals: {goalsForPrompt}\n\n" +
-
-                "CRITICAL PERSONALIZATION DIRECTIVES (MANDATORY): \n" +
-                "1. You MUST adapt your tone, vocabulary, and examples to match the user's age range. \n" +
-                "   - 13-17: simpler language, supportive guidance, avoid pressure or complex life assumptions. \n" +
-                "   - 18-24: relatable, supportive, include study/life transition context. \n" +
-                "   - 25–50: practical, time-efficient, work-life balance.\n" +
-                "   - 50 and above: calm, respectful, experience-aware.\n\n" +
-
-                "2. Contextual Advice: When providing specific suggestions, tailor them to be feasible within their occupation's typical daily routine. \n" +
-                "3. Natural Conversation: Guide the user to talk when they express their concern without jump straight to a solution.Do NOT awkwardly force their age, occupation or their primary goals into every single reply. Use this context to silently shape your advice so it feels highly relevant to them. \n" +
-                $"4. Goal-Oriented Support: Use their {goalsForPrompt}to guide your analysis whenever appropriate, connect their current struggles back to these goals to help them achieve specific outcomes. \n" +
-                $"5. Tone requirement: You MUST maintain a {profile.tonePreference} tone at all times. \n" +
-                "6. Silently verify your response before outputting: Ensure your tone naturally aligns with their demographic without sounding forced.\n\n"+
-
-                "SAFETY & FORMATTING RULES: \n" +
-               "1. You must remain conversational, concise, and easy to read on a mobile screen. \n" +
-                "2. Keep all responses under 150 words and use short, digestible sentences. \n" +
-                "3. CRITICAL: You are a supportive AI companion, not a doctor. Never offer medical diagnoses, prescribe treatments, or analyze severe trauma. \n" +
-                "4. If the user expresses thoughts of self-harm or severe crisis, you must gently but immediately encourage them to seek real professional help.";
+                $"User Context: Age {profile.ageRange}, {profile.occupation}. Goals: {goalsForPrompt}. Tone: {profile.tonePreference}.\n" +
+                "Directives:\n" +
+                "- Match vocab to age (13-17: simple; 18-24: relatable; 25-50: practical; 50+: experienced).\n" +
+                "- Advice must fit their occupation's routine.\n" +
+                "- Listen first. Don't immediately jump to solutions.\n" +
+                "- Subtly align responses with their context/goals without awkwardly repeating them.\n"+
+                "- CRITICAL STYLE RULE: NEVER use regular Unicode emojis. Instead, naturally insert 1 TextMeshPro sprite tags to express emotions. Use ONLY these exact formats:\n" +
+                "  * For Happy/Smiling: <sprite name=\"smile\">\n" +
+                "  * For Agree/Encouragement: <sprite name=\"thumbs\">\n" +
+                "  * For Sadness/Empathy: <sprite name=\"sad\">\n" +
+                "  * For Care/Love/Warmth: <sprite name=\"heart\">\n" +
+                "  * For Calm/Peace/Meditation: <sprite name=\"calm\">\n" +
+                "  * For Progress: <sprite name=\"growth\">\n\n";
+            systemInstructionText +=
+            "CRITICAL SAFETY OVERRIDE:\n" +
+            "IF the user expresses thoughts of self-harm, suicide, severe trauma, or physical danger, you MUST immediately halt all normal conversation. " +
+            "In this specific scenario, do NOT offer advice, empathy, or follow-up questions. Your ONLY output must be exactly the text below:\n\n" +
+            "\"It sounds like you are going through an incredibly difficult time right now, and you don't have to face it alone. Please reach out to these professional resources immediately:\n\n" +
+            " General Emergency: 999\n" +
+            "Talian Kasih (24/7): 15999 or WhatsApp 019-2615999\n" +
+            "Befrienders Malaysia: 03-7627 2929\n" +
+            "MIASA Crisis Helpline: 1-800-180066\n\n" +
+            "Help is always available.\"";
         }
 
-       
-
-        // --- DEBUG LOG: Print the entire system instruction string ---
         Debug.Log($"[Gemini System Prompt Compiled]:\n{systemInstructionText}");
 
+        float aiTemp = 0.4f;
+        float aiTopP = 0.85f;
+        int aiTopK = 30;
+
+        if (profile != null && !string.IsNullOrEmpty(profile.tonePreference))
+        {
+            switch (profile.tonePreference.ToLower())
+            {
+                case "direct":
+                    aiTemp = 0.2f;
+                    aiTopP = 0.60f;
+                    aiTopK = 20;
+                    break;
+                case "motivational":
+                    aiTemp = 0.7f;
+                    aiTopP = 0.90f;
+                    aiTopK = 40;
+                    break;
+                case "empathetic":
+                default:
+                    aiTemp = 0.4f;
+                    aiTopP = 0.85f;
+                    aiTopK = 30;
+                    break;
+            }
+        }
+
         var config = new Firebase.AI.GenerationConfig(
-            temperature: 0.7f,
-            topP: 0.1f,
-            topK: 16,
+            temperature: aiTemp,
+            topP: aiTopP,
+            topK: aiTopK,
             maxOutputTokens: 200
         );
 
@@ -404,7 +429,28 @@ public class ChatbotManager : MonoBehaviour
             systemInstruction: ModelContent.Text(systemInstructionText)
         );
 
-        _chatSession = _model.StartChat();
+        List<ModelContent> pastHistory = new List<ModelContent>();
+
+        int historyLimit = 10;
+        int startIndex = Mathf.Max(0, _chatHistory.Count - historyLimit);
+
+        for (int i = startIndex; i < _chatHistory.Count; i++)
+        {
+            var msg = _chatHistory[i];
+
+            // 2. Use the correct ModelContent constructors to assign roles
+            if (msg.isBot)
+            {
+                pastHistory.Add(new ModelContent("model", new ModelContent.TextPart(msg.text)));
+            }
+            else
+            {
+                pastHistory.Add(new ModelContent("user", new ModelContent.TextPart(msg.text)));
+            }
+        }
+
+       
+        _chatSession = _model.StartChat(pastHistory);
     }
 
     public async void OnSendButtonClicked()
@@ -428,8 +474,7 @@ public class ChatbotManager : MonoBehaviour
 
         try
         {
-            string formattedPrompt = $"Reply with not more than 150 words to: {userText}";
-            var response = await _chatSession.SendMessageAsync(formattedPrompt);
+            var response = await _chatSession.SendMessageAsync(userText);
 
             string finalResponse = response.Text ?? "No text in response.";
             botTextComponent.text = finalResponse;
