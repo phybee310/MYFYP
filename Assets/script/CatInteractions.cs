@@ -30,20 +30,18 @@ public class CatInteraction : MonoBehaviour
         _audioSource.playOnAwake = false;
     }
 
-    // --- NEW: Called when the user does a QUICK TAP ---
+ 
     public void NormalTap()
     {
-        // Don't play the normal meow if the cat is currently resting
+        
         if (_isLayingDown) return;
 
         if (normalMeowClip != null)
         {
-            // PlayOneShot allows sounds to overlap slightly if tapped quickly
             _audioSource.PlayOneShot(normalMeowClip);
         }
     }
 
-    // --- Called when the user SWIPES / PATS ---
     public void PatCat()
     {
         if (_isLayingDown) return;
@@ -55,7 +53,6 @@ public class CatInteraction : MonoBehaviour
     {
         _isLayingDown = true;
 
-        // Play the HAPPY Sound!
         if (happyMeowClip != null)
         {
             _audioSource.PlayOneShot(happyMeowClip);

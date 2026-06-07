@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 using Firebase.Auth;
 using Firebase.Database;
 using Firebase.Extensions;
-using UnityEngine.EventSystems; // NEW: Required to detect which button was clicked!
+using UnityEngine.EventSystems; 
 
 public class AudioManager : MonoBehaviour
 {
@@ -25,7 +25,7 @@ public class AudioManager : MonoBehaviour
     public GameObject confirmBgmButton;
     public GameObject confirmTimeButton;
 
-    // --- NEW: BUTTON VISUAL ARRAYS ---
+  
     [Header("Button Visuals")]
     [SerializeField] private Color _defaultButtonColor = Color.white;
     [SerializeField] private Color _selectedOverlayColor = new Color(0.7f, 0.7f, 0.7f, 1f);
@@ -90,10 +90,10 @@ public class AudioManager : MonoBehaviour
         timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
-    // --- BUTTON VISUAL OVERLAY HELPER ---
+   
     private void ApplyDarkOverlay(Button[] buttonGroup)
     {
-        // Find exactly which button was just clicked using Unity's EventSystem
+        
         if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null) return;
 
         GameObject clickedButton = EventSystem.current.currentSelectedGameObject;
@@ -105,21 +105,19 @@ public class AudioManager : MonoBehaviour
                 Image btnImage = btn.GetComponent<Image>();
                 if (btnImage != null)
                 {
-                    // If this is the button we clicked, turn it grey. Otherwise, turn it white.
                     btnImage.color = (btn.gameObject == clickedButton) ? _selectedOverlayColor : _defaultButtonColor;
                 }
             }
         }
     }
 
-    // --- STEP 1: TIME SELECTION ---
+  
     public void SelectTimeDuration(int minutes)
     {
         bgmAudioSource.Stop();
         targetMeditationSeconds = minutes * 60f;
         confirmTimeButton.SetActive(true);
 
-        // NEW: Update the visual colors for the Time buttons
         ApplyDarkOverlay(timeButtons);
     }
 
@@ -130,7 +128,7 @@ public class AudioManager : MonoBehaviour
         bgmSelectionPanel.SetActive(true);
     }
 
-    // --- STEP 2: BGM SELECTION ---
+    
     public void PreviewTrack(int trackIndex)
     {
         if (trackIndex >= 0 && trackIndex < availableBGMs.Length)
@@ -139,7 +137,7 @@ public class AudioManager : MonoBehaviour
             bgmAudioSource.Play();
             confirmBgmButton.SetActive(true);
 
-            // NEW: Update the visual colors for the BGM buttons
+         
             ApplyDarkOverlay(bgmButtons);
         }
     }
@@ -152,15 +150,12 @@ public class AudioManager : MonoBehaviour
         modelSelectionPanel.SetActive(true);
     }
 
-    // --- STEP 3: MODEL SELECTION ---
-
-    // NEW: Call this from your Model selection buttons just to update the grey overlay!
     public void SelectModelVisual()
     {
         ApplyDarkOverlay(modelButtons);
     }
 
-    // --- START MEDITATION (Triggered after placing the AR model) ---
+   
     public void StartExperience()
     {
         modelSelectionPanel.SetActive(false);
@@ -177,7 +172,6 @@ public class AudioManager : MonoBehaviour
         UpdateTimerText();
     }
 
-    // --- DYNAMIC BACK BUTTON LOGIC ---
     public void OnBackButtonPressed()
     {
         if (isMeditating)
@@ -192,7 +186,6 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // --- PAUSE MENU LOGIC ---
     public void ResumeMeditation()
     {
         isPaused = false;
@@ -200,7 +193,7 @@ public class AudioManager : MonoBehaviour
         bgmAudioSource.Play();
     }
 
-    // --- END SESSION & FIREBASE SAVE LOGIC ---
+    
     public void EndSession()
     {
         isMeditating = false;

@@ -84,7 +84,6 @@ public class ProfileManager : MonoBehaviour
         }
     }
 
-    // --- MAIN NAVIGATION ---
 
     public void GoBackToMainMenu() => SceneManager.LoadScene(_mainMenuSceneName);
 
@@ -94,7 +93,6 @@ public class ProfileManager : MonoBehaviour
         SceneManager.LoadScene(_loginSceneName);
     }
 
-    // --- SUB-PANEL NAVIGATION SYSTEM ---
 
     public void OpenEditMenu()
     {
@@ -127,7 +125,6 @@ public class ProfileManager : MonoBehaviour
         if (panelToActivate != null) panelToActivate.SetActive(true);
     }
 
-    // --- DATA FETCHING & VISUALS ---
 
     private void FetchCurrentPreferences()
     {
@@ -209,7 +206,6 @@ public class ProfileManager : MonoBehaviour
         return false;
     }
 
-    // --- SAVING DATA & POPUPS ---
 
     public void SaveUpdatedPreferences()
     {

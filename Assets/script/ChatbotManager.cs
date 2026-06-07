@@ -352,7 +352,7 @@ public class ChatbotManager : MonoBehaviour
             string goalsForPrompt = GetBroadCategoriesForAI(profile.mainGoal);
             string rawGoals = profile.mainGoal != null ? string.Join(", ", profile.mainGoal) : "None";
 
-            // --- DEBUG LOG: Print out the exact variables injected into Gemini ---
+
             Debug.Log("========== GEMINI AI PROFILE CONTEXT ==========");
             Debug.Log($"Injected Age: {profile.ageRange}");
             Debug.Log($"Injected Occupation: {profile.occupation}");

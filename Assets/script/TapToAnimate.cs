@@ -18,13 +18,12 @@ public class TapToAnimate : MonoBehaviour
 
     public void TriggerAnimation()
     {
-        // Play Animation (if it has one)
+       
         if (_animator != null && !string.IsNullOrEmpty(triggerName))
         {
             _animator.SetTrigger(triggerName);
         }
 
-        // Play Sound (if it has one)
         if (interactSound != null)
         {
             interactSound.Play();

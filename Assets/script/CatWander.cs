@@ -29,10 +29,9 @@ public class CatWander : MonoBehaviour
 
         if (_isWalking)
         {
-            // 1. Move the cat
+          
             transform.position = Vector3.MoveTowards(transform.position, _targetPosition, walkSpeed * Time.deltaTime);
 
-            // 2. Rotate the cat to face its target
             Vector3 direction = (_targetPosition - transform.position).normalized;
             if (direction != Vector3.zero)
             {
@@ -40,7 +39,6 @@ public class CatWander : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
             }
 
-            // 3. Stop if we reached the target
             if (Vector3.Distance(transform.position, _targetPosition) < 0.05f)
             {
                 StopWalking();
@@ -48,7 +46,6 @@ public class CatWander : MonoBehaviour
         }
         else
         {
-            // 4. Wait for the timer to finish before walking again
             _waitTimer += Time.deltaTime;
             if (_waitTimer >= waitTimeBetweenWalks)
             {
@@ -72,7 +69,6 @@ public class CatWander : MonoBehaviour
         _waitTimer = 0f;
         _animator.SetBool("IsWalking", false);
 
-        // Notice the random Meow code is completely gone from here!
     }
 
     public void PauseWander()

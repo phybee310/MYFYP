@@ -1,5 +1,5 @@
 using System;
-using System.Collections; // NEW: Required for Coroutines
+using System.Collections; 
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -9,12 +9,8 @@ using Firebase.Auth;
 using Firebase.Extensions;
 using UnityEngine.InputSystem;
 
-/// <summary>
-/// Handles Firebase Authentication including user registration, login, and UI state management.
-/// </summary>
 public class FirebaseManager : MonoBehaviour
 {
-    // Broadcasts successful login to other scripts (like AuthSceneController)
     public static event Action<FirebaseUser> OnLoginSuccess;
 
     [Header("Firebase State")]
@@ -68,10 +64,10 @@ public class FirebaseManager : MonoBehaviour
         });
     }
 
-    // --- UI STATE MANAGEMENT ---
+   
     private void Update()
     {
-        // Check the virtual keyboard for the escape key (Android Back Button)
+     
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             Debug.Log("User pressed the back button. Exiting app...");
@@ -90,31 +86,27 @@ public class FirebaseManager : MonoBehaviour
         if (_resetPasswordPanel != null) _resetPasswordPanel.SetActive(showReset);
     }
 
-    // --- POPUP LOGIC (UPDATED FOR AUTO-HIDE) ---
 
     private void ShowPopupMessage(string message)
     {
         if (_popupText != null) _popupText.text = message;
         if (_popupPanel != null) _popupPanel.SetActive(true);
-
-        // Stop the previous timer if a new message appears quickly
         if (_popupCoroutine != null)
         {
             StopCoroutine(_popupCoroutine);
         }
 
-        // Start a new 5-second countdown
         _popupCoroutine = StartCoroutine(HidePopupRoutine(5f));
     }
 
-    // The coroutine that waits and then hides the panel
+   
     private IEnumerator HidePopupRoutine(float delaySeconds)
     {
         yield return new WaitForSeconds(delaySeconds);
         if (_popupPanel != null) _popupPanel.SetActive(false);
     }
 
-    // --- AUTHENTICATION LOGIC ---
+    
 
     public void OnRegisterButtonClicked()
     {
@@ -178,7 +170,6 @@ public class FirebaseManager : MonoBehaviour
         });
     }
 
-    // --- RESET PASSWORD LOGIC ---
     public void OnResetPasswordButtonClicked()
     {
         string email = _resetEmailInput.text.Trim();
@@ -224,8 +215,6 @@ public class FirebaseManager : MonoBehaviour
             });
         });
     }
-
-    // --- VALIDATION & ERROR HANDLING ---
 
     private bool ValidateRegistrationInputs()
     {

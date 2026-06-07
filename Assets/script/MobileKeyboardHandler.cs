@@ -3,12 +3,12 @@ using UnityEngine;
 public class MobileKeyboardHandler : MonoBehaviour
 {
     [Header("References")]
-    public RectTransform panelToMove;     // Your input bar
+    public RectTransform panelToMove;  
     public Canvas canvas;
 
     [Header("Settings")]
     public float animationSpeed = 10f;
-    public float keyboardHeightRatio = 0.4f; // fallback ratio (40% of screen)
+    public float keyboardHeightRatio = 0.4f; 
 
     private float _defaultY;
     private float _targetY;
@@ -36,18 +36,16 @@ public class MobileKeyboardHandler : MonoBehaviour
 #endif
     }
 
-    // --- Detect keyboard visibility robustly ---
     private void UpdateKeyboardState()
     {
         bool visible = false;
 
-        // Method 1: Unity API
         if (TouchScreenKeyboard.visible)
         {
             visible = true;
         }
 
-        // Method 2: TMP/InputField focus fallback
+    
         if (UnityEngine.EventSystems.EventSystem.current != null)
         {
             var selected = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
@@ -62,7 +60,6 @@ public class MobileKeyboardHandler : MonoBehaviour
         _keyboardVisible = visible;
     }
 
-    // --- Calculate height safely ---
     private float GetKeyboardHeight()
     {
         float height = TouchScreenKeyboard.area.height;
@@ -76,7 +73,6 @@ public class MobileKeyboardHandler : MonoBehaviour
         return height / canvas.scaleFactor;
     }
 
-    // --- Smooth movement ---
     private void UpdatePanelPosition()
     {
         if (_keyboardVisible)
