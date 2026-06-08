@@ -4,7 +4,7 @@ To keep this repository lightweight, the Firebase Unity SDK and private database
 
 Please follow these steps to run the application successfully:
 ### Register Project in firebase
-1. Open firebase console here:[Firebase Console].(https://console.firebase.google.com/u/0/) and create a new project.
+1. Open firebase console here:[Firebase Console](https://console.firebase.google.com/u/0/) and create a new project.
 2. Under the new project, click 'add app' and select the unity platform.
 3. Select 'Register as Android app' and copy the package name by accessing **Build settings > Android > Player settings > Other settings > Bundle identifier** in the Unity IDE.
 4. Download the **google-services.json** file and place it under Assets in Unity.
