@@ -25,7 +25,13 @@ Please follow these steps to run the application successfully:
 1.Enable Gemini AI services 
 2. Generate API key from [Google AI Studio](https://aistudio.google.com/).
 
-Redownload the updated **google-services.json** file after reconfiguration of the FIrebase SDKs
+Redownload the updated **google-services.json** file after reconfiguration of the Firebase SDKs
+Create a FirebaseConfig script and write the script below:
+public static class FirebaseConfig
+{
+    public const string DatabaseURL = "(your Realtime database reference url)";
+}
+
 
 ###  Restart and Play
 Once the packages are imported and the JSON file is in place, Unity will recompile.
