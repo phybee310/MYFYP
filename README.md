@@ -22,7 +22,7 @@ Please follow these steps to run the application successfully:
 2. Choose your preferred location.
 3. Start in **Test Mode** (or update rules to require authentication) so the app can read/write user data.
 ## AI logic( Gemini AI)
-1.Enable Gemini AI services 
+1. Enable Gemini AI services 
 2. Generate API key from [Google AI Studio](https://aistudio.google.com/).
 
 Redownload the updated **google-services.json** file after reconfiguration of the Firebase SDKs
