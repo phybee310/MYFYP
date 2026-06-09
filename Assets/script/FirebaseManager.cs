@@ -8,6 +8,7 @@ using Firebase;
 using Firebase.Auth;
 using Firebase.Extensions;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class FirebaseManager : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class FirebaseManager : MonoBehaviour
     [Header("Login UI")]
     [SerializeField] private TMP_InputField _loginEmailInput;
     [SerializeField] private TMP_InputField _loginPasswordInput;
+    [SerializeField] private UnityEngine.UI.Toggle _rememberMeToggle;
 
     [Header("Register UI")]
     [SerializeField] private TMP_InputField _regUserIDInput;
@@ -60,11 +62,33 @@ public class FirebaseManager : MonoBehaviour
             }
 
             _auth = FirebaseAuth.DefaultInstance;
+
+            
+            bool wantsRememberMe = PlayerPrefs.GetInt("RememberMePref", 0) == 1;
+
+            if (_auth.CurrentUser != null)
+            {
+                if (wantsRememberMe)
+                {
+                 
+                    _user = _auth.CurrentUser;
+                    Debug.Log($"Welcome back, {_user.DisplayName}!");
+
+                    TogglePanels(false, false, false); 
+                    OnLoginSuccess?.Invoke(_user); 
+                    return; 
+                }
+                else
+                {
+      
+                    _auth.SignOut();
+                }
+            }
+
             ShowLoginPanel();
         });
     }
 
-   
     private void Update()
     {
      
@@ -165,6 +189,12 @@ public class FirebaseManager : MonoBehaviour
 
             _user = task.Result.User;
             ShowPopupMessage("Login successful! Loading...");
+            if (_rememberMeToggle != null)
+            {
+                int toggleState = _rememberMeToggle.isOn ? 1 : 0;
+                PlayerPrefs.SetInt("RememberMePref", toggleState);
+                PlayerPrefs.Save();
+            }
 
             OnLoginSuccess?.Invoke(_user);
         });

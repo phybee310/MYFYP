@@ -89,7 +89,13 @@ public class ProfileManager : MonoBehaviour
 
     public void LogOut()
     {
+      
         FirebaseAuth.DefaultInstance.SignOut();
+
+       
+        PlayerPrefs.SetInt("RememberMePref", 0);
+        PlayerPrefs.Save();
+
         SceneManager.LoadScene(_loginSceneName);
     }
 
