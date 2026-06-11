@@ -4636,7 +4636,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _loginPanel: {fileID: 1598649962}
   _registerPanel: {fileID: 122188198}
-  _resetPasswordPanel: {fileID: 0}
+  _resetPasswordPanel: {fileID: 1315789420}
   _loginEmailInput: {fileID: 1219090381}
   _loginPasswordInput: {fileID: 1687184296}
   _rememberMeToggle: {fileID: 2130105600}
@@ -5338,7 +5338,7 @@ GameObject:
   - component: {fileID: 1315789423}
   - component: {fileID: 1315789422}
   m_Layer: 5
-  m_Name: Reset
+  m_Name: reset
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
